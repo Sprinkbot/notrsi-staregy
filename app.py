@@ -6,12 +6,12 @@ import numpy as np
 # ---------------- CONFIG ----------------
 RSI_PERIOD = 14
 
-# ---------------- FETCH S&P 500 TICKERS ----------------
+# ---------------- FETCH S&P 500 TICKERS (CLOUD SAFE) ----------------
 @st.cache_data(ttl=86400)
 def get_sp500_tickers():
-    url = "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies"
-    table = pd.read_html(url)[0]
-    return table["Symbol"].str.replace(".", "-", regex=False).tolist()
+    url = "https://raw.githubusercontent.com/datasets/s-and-p-500-companies/main/data/constituents.csv"
+    df = pd.read_csv(url)
+    return df["Symbol"].str.replace(".", "-", regex=False).tolist()
 
 # ---------------- RSI FUNCTION ----------------
 def calculate_rsi(close, period=14):
@@ -29,7 +29,7 @@ def calculate_rsi(close, period=14):
 # ---------------- STREAMLIT UI ----------------
 st.set_page_config(page_title="S&P 500 RSI Screener", layout="wide")
 st.title("📉 S&P 500 RSI Screener")
-st.caption("14-Day RSI • All 500 Stocks • Live Data")
+st.caption("14-Day RSI • All 500 Stocks • Live Yahoo Finance Data")
 
 run = st.button("🚀 Run Scanner")
 
@@ -68,7 +68,7 @@ if run:
     df = pd.DataFrame(results)
 
     if df.empty:
-        st.error("No data fetched. Yahoo Finance rate-limit hit.")
+        st.error("No data fetched. Yahoo Finance rate-limit hit. Try again.")
         st.stop()
 
     df = df.sort_values("RSI")
