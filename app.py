@@ -81,4 +81,3 @@ if run:
     col3.metric("Overbought (>70)", len(df[df["RSI"] > 70]))
 
     st.dataframe(df, use_container_width=True)
-
