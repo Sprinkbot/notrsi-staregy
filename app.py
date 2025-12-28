@@ -6,20 +6,12 @@ import numpy as np
 # ---------------- CONFIG ----------------
 RSI_PERIOD = 14
 
-SP500_150 = [
-    "AAPL","MSFT","AMZN","NVDA","GOOGL","META","TSLA","BRK-B","JPM","V",
-    "LLY","UNH","XOM","AVGO","JNJ","WMT","PG","MA","COST","HD",
-    "ORCL","MRK","ABBV","CRM","BAC","NFLX","CVX","KO","PEP","ADBE",
-    "TMO","LIN","AMD","MCD","ACN","DIS","CSCO","WFC","ABT","INTC",
-    "DHR","VZ","TXN","PM","COP","IBM","CAT","GE","AMAT","RTX",
-    "NOW","ISRG","GS","SPGI","INTU","LOW","UNP","BKNG","ELV","MDT",
-    "DE","LMT","ADI","UPS","SCHW","PLD","SYK","BLK","MU","CB",
-    "AMGN","CI","BA","MDLZ","GILD","MMC","TGT","MO","SO","PGR",
-    "ICE","ZTS","APD","DUK","CL","EOG","BDX","USB","AON","EQIX",
-    "PNC","ITW","CCI","SHW","NSC","HUM","FIS","REGN","SLB","WM",
-    "GD","TFC","EMR","ETN","FCX","PSA","ADP","SRE","ROP","CMG",
-    "CSX","MPC","OXY","AEP","NOC","FDX","KMB","AIG","F","GM"
-]
+# ---------------- FETCH S&P 500 TICKERS ----------------
+@st.cache_data(ttl=86400)
+def get_sp500_tickers():
+    url = "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies"
+    table = pd.read_html(url)[0]
+    return table["Symbol"].str.replace(".", "-", regex=False).tolist()
 
 # ---------------- RSI FUNCTION ----------------
 def calculate_rsi(close, period=14):
@@ -35,17 +27,19 @@ def calculate_rsi(close, period=14):
     return rsi.iloc[-1]
 
 # ---------------- STREAMLIT UI ----------------
-st.set_page_config(page_title="RSI Screener", layout="wide")
-st.title("📉 S&P 500 RSI Screener (Top 150)")
-st.caption("14-Day RSI • Live Yahoo Finance Data")
+st.set_page_config(page_title="S&P 500 RSI Screener", layout="wide")
+st.title("📉 S&P 500 RSI Screener")
+st.caption("14-Day RSI • All 500 Stocks • Live Data")
 
 run = st.button("🚀 Run Scanner")
 
 if run:
+    tickers = get_sp500_tickers()
     results = []
+
     progress = st.progress(0)
 
-    for i, ticker in enumerate(SP500_150):
+    for i, ticker in enumerate(tickers):
         try:
             data = yf.Ticker(ticker).history(period="3mo")
 
@@ -67,19 +61,19 @@ if run:
             })
 
         except Exception:
-            continue
+            pass
 
-        progress.progress((i + 1) / len(SP500_150))
+        progress.progress((i + 1) / len(tickers))
 
     df = pd.DataFrame(results)
 
     if df.empty:
-        st.error("No data fetched. Check internet or Yahoo Finance limits.")
+        st.error("No data fetched. Yahoo Finance rate-limit hit.")
         st.stop()
 
     df = df.sort_values("RSI")
 
-    st.success("Scan complete")
+    st.success(f"Scan complete — {len(df)} stocks processed")
 
     col1, col2, col3 = st.columns(3)
     col1.metric("Oversold (<30)", len(df[df["RSI"] < 30]))
@@ -87,3 +81,4 @@ if run:
     col3.metric("Overbought (>70)", len(df[df["RSI"] > 70]))
 
     st.dataframe(df, use_container_width=True)
+
