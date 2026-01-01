@@ -77,6 +77,8 @@ if run:
         st.error("No data fetched. Yahoo Finance rate-limit hit. Try again.")
         st.stop()
 
+    # -------- FORCE COLUMN ORDER (THE FIX) --------
+    df = df[["Ticker", "CMP", "Date", "RSI", "Status"]]
     df = df.sort_values("RSI")
 
     st.success(f"Scan complete — {len(df)} stocks processed")
