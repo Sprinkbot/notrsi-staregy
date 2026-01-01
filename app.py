@@ -6,7 +6,7 @@ import numpy as np
 # ---------------- CONFIG ----------------
 RSI_PERIOD = 14
 
-# ---------------- FETCH S&P 500 TICKERS (CLOUD SAFE) ----------------
+# ---------------- FETCH S&P 500 TICKERS ----------------
 @st.cache_data(ttl=86400)
 def get_sp500_tickers():
     url = "https://raw.githubusercontent.com/datasets/s-and-p-500-companies/main/data/constituents.csv"
@@ -29,7 +29,7 @@ def calculate_rsi(close, period=14):
 # ---------------- STREAMLIT UI ----------------
 st.set_page_config(page_title="S&P 500 RSI Screener", layout="wide")
 st.title("📉 S&P 500 RSI Screener")
-st.caption("14-Day RSI • All 500 Stocks • Live Yahoo Finance Data")
+st.caption("14-Day RSI • CMP • Date • All 500 Stocks")
 
 run = st.button("🚀 Run Scanner")
 
@@ -46,7 +46,11 @@ if run:
             if data.empty or "Close" not in data or len(data) < RSI_PERIOD:
                 continue
 
-            rsi = round(calculate_rsi(data["Close"]), 2)
+            close = data["Close"]
+            rsi = round(calculate_rsi(close), 2)
+
+            cmp = round(close.iloc[-1], 2)
+            date = close.index[-1].date()
 
             status = (
                 "Oversold" if rsi < 30 else
@@ -56,6 +60,8 @@ if run:
 
             results.append({
                 "Ticker": ticker,
+                "CMP": cmp,
+                "Date": date,
                 "RSI": rsi,
                 "Status": status
             })
